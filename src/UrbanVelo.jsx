@@ -1129,7 +1129,7 @@ export default function UrbanoVelo() {
         }
         .spec-items {
           list-style: disc; padding-left: 16px; color: #888;
-          font-size: clamp(0.1rem, 1.8vw, 2rem);
+          font-size: clamp(0.1rem, 1.2vw, 1.6rem);
           line-height: 1.75; font-family: 'DM Sans', sans-serif; margin: 0;
         }
         .specs-img-col {
