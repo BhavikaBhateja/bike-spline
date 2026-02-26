@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import Spline from "@splinetool/react-spline";
 import { gsap } from "gsap";
@@ -16,6 +17,11 @@ export default function UrbanoVelo() {
   const scrollCueRef    = useRef(null);
   const sectionRef      = useRef(null);
   const slidingPanelRef = useRef(null);
+
+  const targetBike  = useRef({ x: 8, z: 0, ry: 0 });
+  const currentBike = useRef({ x: 8, z: 0, ry: 0 });
+  const rafRef      = useRef(null);
+
   const [splineReady, setSplineReady] = useState(false);
 
   useEffect(() => {
@@ -31,6 +37,28 @@ export default function UrbanoVelo() {
       bike.scale.set(1.12, 1.12, 1.12);
       bike.position.x = 8;
     }
+
+    const LERP = 0.04;
+    function tick() {
+      rafRef.current = requestAnimationFrame(tick);
+      if (!bikeRef.current) return;
+      const t = targetBike.current;
+      const c = currentBike.current;
+
+      c.x  += (t.x  - c.x)  * LERP;
+      c.z  += (t.z  - c.z)  * LERP;
+
+      let dRy = t.ry - c.ry;
+      if (dRy >  Math.PI) dRy -= Math.PI * 2;
+      if (dRy < -Math.PI) dRy += Math.PI * 2;
+      c.ry += dRy * LERP;
+
+      bikeRef.current.position.x = c.x;
+      bikeRef.current.position.z = c.z;
+      bikeRef.current.rotation.y = c.ry;
+    }
+    tick();
+
     setSplineReady(true);
   }
 
@@ -43,62 +71,49 @@ export default function UrbanoVelo() {
 
     const timer = setTimeout(() => {
       ScrollTrigger.refresh(true);
-      gsap.set(precisionRef.current, { y: "100vh" });
-gsap.set(illuminateRef.current, { y: "100vh" });
-gsap.set(heroTextRef.current, { y: "0%" });
+      gsap.set(precisionRef.current,  { y: "100vh" });
+      gsap.set(illuminateRef.current, { y: "100vh" });
+      gsap.set(heroTextRef.current,   { y: "0%" });
 
       const section = sectionRef.current;
       const panel   = slidingPanelRef.current;
 
-      // ── Bike arc ────────────────────────────────────────────────
       ScrollTrigger.create({
         trigger: section,
         start: "top top",
         end: "bottom bottom",
-        scrub: 0.05,
-       onUpdate: (self) => {
-  if (!bikeRef.current) return;
+        scrub: true,
+        onUpdate: (self) => {
+          const p      = self.progress;
+          const radius = 280;
 
-  const p = self.progress;
-  const TRANS_END = 0.05; // pehle 25% = translation phase
-  const lockedP = Math.min(p, 0.55);
-  const angle = lockedP * (170 * Math.PI / 180);
-  const radius = 280;
+          const lockedP = Math.min(p, 0.55);
+          const angle   = lockedP * (170 * Math.PI / 180);
 
-  // Pure rotation values (arc)
-  const arcX = -Math.sin(angle) * radius;
-  const arcZ = radius - Math.cos(angle) * radius;
+          const arcX = -Math.sin(angle) * radius;
+          const arcZ = radius - Math.cos(angle) * radius;
 
-  if (p <= TRANS_END) {
-    // Phase 1: Sirf translation — angle 0 pe fixed arc start point tak
-    const t = p / TRANS_END; // 0 → 1
-    const startX = 8;        // initial bike position
-    const startZ = 0;
-    const targetX = 0;       // arc ka starting point (angle=0 pe arcX = 0)
-    const targetZ = 0;       // arc ka starting point (angle=0 pe arcZ = 0)
+          const TRANS_END = 0.03;
+          const tRaw      = Math.min(p / TRANS_END, 1);
+          const tSmooth   = tRaw * tRaw * (3 - 2 * tRaw);
+          const startX    = 8;
 
-    bikeRef.current.position.x = startX + (targetX - startX) * t;
-    bikeRef.current.position.z = startZ + (targetZ - startZ) * t;
-    bikeRef.current.rotation.y = 0; // rotation nahi abhi
-  } else {
-    // Phase 2: Sirf rotation — position arc follow kare
-    bikeRef.current.position.x = arcX;
-    bikeRef.current.position.z = arcZ;
-    bikeRef.current.rotation.y = -angle;
-  }
-},
+          const transOffset = startX * (1 - tSmooth);
+
+          targetBike.current.x  = arcX + transOffset;
+          targetBike.current.z  = arcZ;
+          targetBike.current.ry = -angle;
+        },
       });
 
-      // ── Hero slide up ────────────────────────────────────────────
       gsap.to(heroTextRef.current, {
         y: "-100%", ease: "power1.in",
         scrollTrigger: {
           trigger: section, start: "top top", end: "6% top",
-          scrub: 0.5, invalidateOnRefresh: true,
+          scrub: 1, invalidateOnRefresh: true,
         },
       });
 
-      // ── Scroll cue ───────────────────────────────────────────────
       gsap.to(scrollCueRef.current, {
         opacity: 0,
         scrollTrigger: {
@@ -107,37 +122,34 @@ gsap.set(heroTextRef.current, { y: "0%" });
         },
       });
 
-      // ── Precision ────────────────────────────────────────────────
       gsap.fromTo(precisionRef.current,
         { y: "100vh" },
         {
           y: "-400px", ease: "none",
           scrollTrigger: {
             trigger: section, start: "7% top", end: "44% top",
-            scrub: 0.05, invalidateOnRefresh: true,
+            scrub: 1, invalidateOnRefresh: true,
           },
         }
       );
 
-      // ── Illuminate ───────────────────────────────────────────────
       gsap.fromTo(illuminateRef.current,
         { y: "100vh" },
         {
           y: "-400px", ease: "none",
           scrollTrigger: {
             trigger: section, start: "25% top", end: "51% top",
-            scrub: 0.005, invalidateOnRefresh: true,
+            scrub: 1, invalidateOnRefresh: true,
           },
         }
       );
 
-      // ── Sliding panel ─────────────────────────────────────────────
       const panelTl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "40% top",
           end: "100% top",
-          scrub: 0.1,
+          scrub: 1,
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (window.scrollY === 0) gsap.set(panel, { y: "100vh" });
@@ -154,12 +166,12 @@ gsap.set(heroTextRef.current, { y: "0%" });
 
     return () => {
       clearTimeout(timer);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       ScrollTrigger.getAll().forEach((t) => t.kill());
       gsap.killTweensOf("*");
     };
   }, [splineReady]);
 
-  /* ── DATA ───────────────────────────────────────────────────── */
   const specRows = [
     {
       title: "Battery",
@@ -209,7 +221,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
     />
   );
 
-  /* ── RENDER ─────────────────────────────────────────────────── */
   return (
     <div style={{ background: "#0f0f0f", color: "#f0efe8", overflowX: "hidden" }}>
       <style>{`
@@ -219,25 +230,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
         body { background: #0f0f0f; overflow-x: hidden; }
         a { text-decoration: none; }
 
-        /* ── NAV ── */
-        nav {
-          position: fixed; top: 0; left: 0; right: 0; height: 72px;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 clamp(20px, 3vw, 56px);
-          z-index: 300;
-          background: rgba(12,12,12,0.92); backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          max-width: 1800px; margin: 0 auto;
-          /* stretch the bg edge to edge even with max-width content */
-        }
-        /* full-bleed nav bg */
-        nav::before {
-          content: '';
-          position: absolute; inset: 0;
-          background: rgba(12,12,12,0.92); backdrop-filter: blur(20px);
-          z-index: -1;
-          left: calc(-50vw + 50%); right: calc(-50vw + 50%);
-        }
         .nav-wrapper {
           position: fixed; top: 0; left: 0; right: 0; height: 72px;
           z-index: 300;
@@ -268,13 +260,8 @@ gsap.set(heroTextRef.current, { y: "0%" });
           border-radius: 100px; font-family: 'DM Sans', sans-serif;
           font-weight: 700; font-size: clamp(0.75rem, 0.9vw, 0.875rem); cursor: pointer;
         }
+        @media (max-width: 640px) { .nav-links { display: none; } }
 
-        /* Hide nav links on small screens */
-        @media (max-width: 640px) {
-          .nav-links { display: none; }
-        }
-
-        /* ── SCROLL CUE ── */
         .scroll-cue {
           position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
           z-index: 50; display: flex; flex-direction: column; align-items: center;
@@ -291,7 +278,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
           50%      { transform: rotate(45deg) translateY(5px); }
         }
 
-        /* ── SECTION TEXTS (Precision / Illuminate) ── */
         .section-text-panel {
           position: fixed; top: 0; left: 0; right: 0;
           display: flex; justify-content: flex-end;
@@ -321,7 +307,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           .section-body { text-align: center; }
         }
 
-        /* ── SPECS PANEL ── */
+        /* ── SPECS PANEL ─────────────────────────────────────── */
         .specs-panel {
           height: 100vh; background: #181818;
           display: flex; flex-direction: column;
@@ -336,33 +322,34 @@ gsap.set(heroTextRef.current, { y: "0%" });
         }
         .specs-grid {
           display: grid;
-          grid-template-columns: 1fr clamp(160px, 20vw, 340px);
+          grid-template-columns: 1fr clamp(220px, 30vw, 480px);
           gap: clamp(10px, 1.2vw, 20px);
           flex: 1; min-height: 0;
-        }
-        @media (max-width: 768px) {
-          .specs-grid { grid-template-columns: 1fr; }
-          .specs-img-col { display: none; }
         }
         .specs-table {
           border: 1px solid rgba(255,255,255,0.09); border-radius: 14px;
           overflow: hidden; display: flex; flex-direction: column;
+          height: 100%;
         }
         .spec-row {
           border-bottom: 1px solid rgba(255,255,255,0.06);
-          padding: clamp(14px, 1.6vw, 26px) clamp(16px, 2vw, 32px);
-          display: flex; gap: clamp(16px, 2.5vw, 40px);
-          align-items: flex-start; flex: 1;
+          padding: 0 clamp(16px, 2vw, 32px);
+          display: flex;
+          gap: clamp(16px, 2.5vw, 40px);
+          align-items: center;
+          flex: 1;
+          min-height: 0;
         }
         .spec-row:last-child { border-bottom: none; }
         .spec-title {
-          width: clamp(100px, 12vw, 200px); flex-shrink: 0;
+          width: clamp(100px, 10vw, 160px);
+          flex-shrink: 0;
           font-family: 'DM Sans', sans-serif; font-weight: 700;
           font-size: clamp(0.85rem, 0.95vw, 1.05rem); color: #f0efe8; line-height: 1.3;
         }
         .spec-items {
           list-style: disc; padding-left: 16px; color: #888;
-          font-size: clamp(0.75rem, 0.82vw, 0.85rem);
+          font-size: clamp(0.85rem, 0.95vw, 1rem);
           line-height: 1.75; font-family: 'DM Sans', sans-serif; margin: 0;
         }
         .specs-img-col {
@@ -374,10 +361,88 @@ gsap.set(heroTextRef.current, { y: "0%" });
           object-position: center top; display: block;
         }
 
-        /* ── FOOTER ── */
+        /* ── TABLET RESPONSIVE (480px - 768px) ───────────────── */
+        @media (max-width: 768px) {
+          .specs-panel {
+            height: auto;
+            min-height: 100vh;
+            padding: 80px 20px 32px;
+            overflow: visible;
+          }
+
+          .specs-heading {
+            font-size: 1.6rem;
+            margin-bottom: 16px;
+          }
+
+          .specs-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+            flex: none;
+          }
+
+          .specs-img-col {
+            display: none;
+          }
+
+          .specs-table {
+            height: auto;
+            border-radius: 10px;
+          }
+
+          .spec-row {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 14px 16px;
+            gap: 8px;
+            flex: none;
+            min-height: unset;
+          }
+
+          .spec-title {
+            width: 100%;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 6px;
+          }
+
+          .spec-items {
+            font-size: 0.82rem;
+            line-height: 1.7;
+            padding-left: 14px;
+          }
+        }
+
+        /* ── MOBILE RESPONSIVE (< 480px) ─────────────────────── */
+        @media (max-width: 480px) {
+          .specs-panel {
+            padding: 72px 14px 24px;
+          }
+
+          .specs-heading {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+          }
+
+          .spec-row {
+            padding: 12px 14px;
+            gap: 6px;
+          }
+
+          .spec-title {
+            font-size: 0.82rem;
+          }
+
+          .spec-items {
+            font-size: 0.78rem;
+            line-height: 1.65;
+          }
+        }
+
+        /* ── FOOTER ──────────────────────────────────────────── */
         .site-footer {
           font-family: 'DM Sans', sans-serif; background: #0d0d0d;
-          border-top: 1px solid rgba(255,255,255,0.06); min-height: 100vh;
+          border-top: 1px solid rgba(255,255,255,0.06);
         }
         .footer-top {
           display: grid;
@@ -385,9 +450,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
           gap: clamp(32px, 5vw, 80px);
           padding: clamp(40px, 5vw, 72px) clamp(20px, 3.5vw, 56px) clamp(32px, 4vw, 64px);
           border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        @media (max-width: 768px) {
-          .footer-top { grid-template-columns: 1fr; }
         }
         .footer-brand p { color: #555; font-size: 0.875rem; line-height: 1.7; margin: 20px 0 28px; }
         .newsletter-form {
@@ -411,9 +473,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
         .footer-nav {
           display: grid; grid-template-columns: repeat(3, 1fr);
           gap: clamp(20px, 3vw, 40px); padding-top: 4px;
-        }
-        @media (max-width: 500px) {
-          .footer-nav { grid-template-columns: 1fr 1fr; }
         }
         .footer-col h4 {
           font-weight: 700; font-size: 0.78rem; letter-spacing: 0.08em;
@@ -452,6 +511,96 @@ gsap.set(heroTextRef.current, { y: "0%" });
         .footer-legal { display: flex; gap: clamp(12px, 1.5vw, 24px); }
         .footer-legal a { color: #333; font-size: 0.8rem; transition: color 0.2s; }
         .footer-legal a:hover { color: #888; }
+
+        /* ── FOOTER TABLET (480px - 768px) ───────────────────── */
+        @media (max-width: 768px) {
+          .footer-top {
+            grid-template-columns: 1fr;
+            gap: 32px;
+            padding: 40px 20px 32px;
+          }
+
+          .footer-nav {
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+          }
+
+          .footer-col h4 {
+            font-size: 0.75rem;
+            margin-bottom: 14px;
+          }
+
+          .footer-col ul li a {
+            font-size: 0.82rem;
+          }
+
+          .newsletter-form input {
+            font-size: 0.82rem;
+            padding: 11px 14px;
+          }
+
+          .newsletter-form button {
+            padding: 11px 16px;
+            font-size: 0.82rem;
+          }
+
+          .footer-bottom {
+            padding: 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+
+          .social-links {
+            gap: 10px;
+          }
+        }
+
+        /* ── FOOTER MOBILE (< 480px) ─────────────────────────── */
+        @media (max-width: 480px) {
+          .footer-top {
+            padding: 32px 14px 24px;
+            gap: 24px;
+          }
+
+          .footer-nav {
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+          }
+
+          .footer-col h4 {
+            font-size: 0.72rem;
+            margin-bottom: 12px;
+          }
+
+          .social-icon {
+            width: 30px;
+            height: 30px;
+          }
+
+          .social-link {
+            font-size: 0.78rem;
+          }
+
+          .footer-copy,
+          .footer-legal a {
+            font-size: 0.75rem;
+          }
+
+          .footer-bottom {
+            padding: 16px 14px;
+          }
+
+          .newsletter-form input {
+            padding: 10px 12px;
+            font-size: 0.78rem;
+          }
+
+          .newsletter-form button {
+            padding: 10px 14px;
+            font-size: 0.78rem;
+          }
+        }
       `}</style>
 
       {/* NAV */}
@@ -477,7 +626,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
       <div style={{ position: "relative", zIndex: 10 }}>
         <div ref={sectionRef} style={{ height: SCROLL_HEIGHT, position: "relative" }}>
 
-          {/* HERO — clips at navbar */}
+          {/* HERO */}
           <div style={{
             position: "fixed",
             top: "72px", left: 0, right: 0, bottom: 0,
@@ -507,7 +656,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           </div>
 
           {/* PRECISION */}
-          <div ref={precisionRef}  style={{ transform: "translateY(100vh)" }} className="section-text-panel">
+          <div ref={precisionRef} style={{ transform: "translateY(100vh)" }} className="section-text-panel">
             <div className="section-text-inner">
               <h2 className="section-heading">Powered by Precision</h2>
               <p className="section-body">
@@ -517,7 +666,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           </div>
 
           {/* ILLUMINATE */}
-          <div ref={illuminateRef}  style={{ transform: "translateY(100vh)" }} className="section-text-panel">
+          <div ref={illuminateRef} style={{ transform: "translateY(100vh)" }} className="section-text-panel">
             <div className="section-text-inner">
               <h2 className="section-heading">Illuminate Your Path<br />with Confidence</h2>
               <p className="section-body">
@@ -547,7 +696,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
                     <div
                       key={spec.title}
                       className="spec-row"
-                      style={{ background: idx % 2 === 0 ? "#1c1c1c" : "#232323" }}
+                      style={{ background: idx % 2 === 0 ? "#161616" : "#232323" }}
                     >
                       <div className="spec-title">{spec.title}</div>
                       <ul className="spec-items">
@@ -614,9 +763,6 @@ gsap.set(heroTextRef.current, { y: "0%" });
                 </div>
               </div>
               <div className="footer-bottom">
-                {/* <div className="logo" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.02em" }}>
-                  <Logo size={100} />
-                </div> */}
                 <span className="footer-copy">© 2026 UrbanoVelo. All rights reserved.</span>
                 <div className="footer-legal">
                   <a href="#">Terms</a>
