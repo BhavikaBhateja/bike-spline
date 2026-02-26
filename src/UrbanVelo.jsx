@@ -55,7 +55,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
         trigger: section,
         start: "top top",
         end: "bottom bottom",
-        scrub: 0.5,
+        scrub: 0.05,
        onUpdate: (self) => {
   if (!bikeRef.current) return;
 
@@ -94,7 +94,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
         y: "-100%", ease: "power1.in",
         scrollTrigger: {
           trigger: section, start: "top top", end: "6% top",
-          scrub: 1.5, invalidateOnRefresh: true,
+          scrub: 0.5, invalidateOnRefresh: true,
         },
       });
 
@@ -114,7 +114,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           y: "-400px", ease: "none",
           scrollTrigger: {
             trigger: section, start: "7% top", end: "44% top",
-            scrub: 1.5, invalidateOnRefresh: true,
+            scrub: 0.05, invalidateOnRefresh: true,
           },
         }
       );
@@ -126,7 +126,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           y: "-400px", ease: "none",
           scrollTrigger: {
             trigger: section, start: "25% top", end: "51% top",
-            scrub: 1.5, invalidateOnRefresh: true,
+            scrub: 0.005, invalidateOnRefresh: true,
           },
         }
       );
@@ -137,7 +137,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           trigger: section,
           start: "40% top",
           end: "100% top",
-          scrub: 1.5,
+          scrub: 0.1,
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (window.scrollY === 0) gsap.set(panel, { y: "100vh" });
@@ -329,7 +329,7 @@ gsap.set(heroTextRef.current, { y: "0%" });
           overflow: hidden;
         }
         .specs-heading {
-          font-family: 'Syne', sans-serif; font-weight: 800;
+          font-family: 'Inter', sans-serif; font-weight: 800;
           font-size: clamp(1.5rem, 2.5vw, 2.8rem);
           color: #f0efe8; letter-spacing: -0.03em;
           margin-bottom: clamp(16px, 1.5vw, 28px); flex-shrink: 0;
