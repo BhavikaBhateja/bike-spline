@@ -53,15 +53,37 @@ export default function UrbanoVelo() {
         start: "top top",
         end: "bottom bottom",
         scrub: 0.5,
-        onUpdate: (self) => {
-          if (!bikeRef.current) return;
-          const lockedP = Math.min(self.progress, 0.55);
-          const angle   = lockedP * (170 * Math.PI / 180);
-          const radius  = 280;
-          bikeRef.current.position.x = -Math.sin(angle) * radius;
-          bikeRef.current.position.z =  radius - Math.cos(angle) * radius;
-          bikeRef.current.rotation.y = -angle;
-        },
+       onUpdate: (self) => {
+  if (!bikeRef.current) return;
+
+  const p = self.progress;
+  const TRANS_END = 0.05; // pehle 25% = translation phase
+  const lockedP = Math.min(p, 0.55);
+  const angle = lockedP * (170 * Math.PI / 180);
+  const radius = 280;
+
+  // Pure rotation values (arc)
+  const arcX = -Math.sin(angle) * radius;
+  const arcZ = radius - Math.cos(angle) * radius;
+
+  if (p <= TRANS_END) {
+    // Phase 1: Sirf translation — angle 0 pe fixed arc start point tak
+    const t = p / TRANS_END; // 0 → 1
+    const startX = 8;        // initial bike position
+    const startZ = 0;
+    const targetX = 0;       // arc ka starting point (angle=0 pe arcX = 0)
+    const targetZ = 0;       // arc ka starting point (angle=0 pe arcZ = 0)
+
+    bikeRef.current.position.x = startX + (targetX - startX) * t;
+    bikeRef.current.position.z = startZ + (targetZ - startZ) * t;
+    bikeRef.current.rotation.y = 0; // rotation nahi abhi
+  } else {
+    // Phase 2: Sirf rotation — position arc follow kare
+    bikeRef.current.position.x = arcX;
+    bikeRef.current.position.z = arcZ;
+    bikeRef.current.rotation.y = -angle;
+  }
+},
       });
 
       // ── Hero slide up ────────────────────────────────────────────
