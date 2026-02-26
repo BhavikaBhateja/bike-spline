@@ -1145,7 +1145,7 @@ export default function UrbanoVelo() {
         @media (min-width: 1600px) {
           .specs-heading  { font-size: 2.6rem; }
           .spec-title     { font-size: 1.6rem; }
-          .spec-items     { font-size: 1.3rem; }
+          .spec-items     { font-size: 1.1rem; }
 
           .footer-brand p                          { font-size: 1.1rem; }
           .newsletter-form input,
