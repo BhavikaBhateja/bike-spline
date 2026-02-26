@@ -43,6 +43,9 @@ export default function UrbanoVelo() {
 
     const timer = setTimeout(() => {
       ScrollTrigger.refresh(true);
+      gsap.set(precisionRef.current, { y: "100vh" });
+gsap.set(illuminateRef.current, { y: "100vh" });
+gsap.set(heroTextRef.current, { y: "0%" });
 
       const section = sectionRef.current;
       const panel   = slidingPanelRef.current;
@@ -504,7 +507,7 @@ export default function UrbanoVelo() {
           </div>
 
           {/* PRECISION */}
-          <div ref={precisionRef} className="section-text-panel">
+          <div ref={precisionRef}  style={{ transform: "translateY(100vh)" }} className="section-text-panel">
             <div className="section-text-inner">
               <h2 className="section-heading">Powered by Precision</h2>
               <p className="section-body">
@@ -514,7 +517,7 @@ export default function UrbanoVelo() {
           </div>
 
           {/* ILLUMINATE */}
-          <div ref={illuminateRef} className="section-text-panel">
+          <div ref={illuminateRef}  style={{ transform: "translateY(100vh)" }} className="section-text-panel">
             <div className="section-text-inner">
               <h2 className="section-heading">Illuminate Your Path<br />with Confidence</h2>
               <p className="section-body">
