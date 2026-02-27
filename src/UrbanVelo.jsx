@@ -1593,7 +1593,7 @@ export default function UrbanoVelo() {
 
       gsap.fromTo(illuminateRef.current,
         { y: "100vh" },
-        { y: "-400px", ease: "none", scrollTrigger: { trigger: section, start: "29.5% top", end: "51% top", scrub: 1, invalidateOnRefresh: true } }
+        { y: "-400px", ease: "none", scrollTrigger: { trigger: section, start: "36% top", end: "51% top", scrub: 1, invalidateOnRefresh: true } }
       );
 
       const panelTl = gsap.timeline({
